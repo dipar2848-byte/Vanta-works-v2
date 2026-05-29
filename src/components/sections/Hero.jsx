@@ -29,21 +29,18 @@ export default function Hero() {
         transition={{ delay: 0.4 }}
         className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
       >
-        <a
-          href="#pricing"
-          className="px-6 py-3 rounded-xl bg-white text-black font-medium"
-        >
-          Get Growth System
-        </a>
+       <a
+  href="#pricing"
+  className="btn btn-primary"
+>
+  Get Growth System
+</a>
 
-        <a
-          href="#solution"
-          className="px-6 py-3 rounded-xl border border-white/20 text-white"
-        >
-          View System
-        </a>
-      </motion.div>
-
-    </div>
+<a
+  href="#solution"
+  className="btn btn-secondary"
+>
+  View System
+</a>
   );
 }
