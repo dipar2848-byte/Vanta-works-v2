@@ -2,17 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================
+   BASE RESET + SYSTEM
+========================= */
+
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  padding: 0;
   background: #000;
-  color: white;
+  color: #fff;
   overflow-x: hidden;
-  font-family: Inter, sans-serif;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -28,8 +35,105 @@ button {
   cursor: pointer;
 }
 
+/* =========================
+   GLASS SYSTEM
+========================= */
+
 .glass {
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.08);
-  }
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+/* =========================
+   TYPOGRAPHY SYSTEM
+   (STRICT SCALE)
+========================= */
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+p {
+  line-height: 1.65;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* HERO TEXT */
+.text-display {
+  font-size: clamp(2.6rem, 5vw, 4.8rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+/* SECTION HEADINGS */
+.text-h1 {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* SUB HEADINGS */
+.text-h2 {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-weight: 600;
+}
+
+/* BODY TEXT */
+.text-body {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* MUTED TEXT */
+.text-muted {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* MICRO TEXT */
+.text-micro {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* =========================
+   LAYOUT SYSTEM
+========================= */
+
+.section {
+  padding: 6rem 1.5rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.container-text {
+  max-width: 70ch;
+  margin: 0 auto;
+}
+
+/* =========================
+   FOCUS + INTERACTION
+========================= */
+
+input, textarea {
+  font-family: inherit;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* smooth transitions globally */
+button, a, input {
+  transition: all 0.2s ease;
+}
