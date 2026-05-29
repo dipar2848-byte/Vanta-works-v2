@@ -1,252 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* =========================
-   BASE
-========================= */
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-  background: radial-gradient(circle at top, #0a0a0a, #000);
+html, body {
+  background: #000;
   color: white;
-  font-family: Inter, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-/* =========================
-   TOKENS
-========================= */
-
-:root {
-  --border: rgba(255,255,255,0.08);
-  --muted: rgba(255,255,255,0.65);
-
-  --accent1: #7c3aed;
-  --accent2: #22d3ee;
-  --accent3: #22c55e;
-}
-
-/* =========================
-   TYPOGRAPHY SYSTEM
-========================= */
-
-h1, h2, h3 {
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  margin: 0;
-}
-
-p {
-  line-height: 1.7;
-  margin: 0;
-  color: var(--muted);
-}
-
-.text-display {
-  font-size: clamp(2.6rem, 5vw, 5rem);
-  font-weight: 800;
-}
-
-.text-h1 {
-  font-size: clamp(2rem, 3vw, 3rem);
-  font-weight: 700;
-}
-
-.text-h2 {
-  font-size: clamp(1.4rem, 2.2vw, 2rem);
-  font-weight: 600;
+section {
+  position: relative;
 }
 
 .text-body {
-  font-size: 1rem;
-  color: var(--muted);
+  color: rgba(255,255,255,0.75);
+  line-height: 1.6;
 }
 
-/* =========================
-   LAYOUT SYSTEM
-========================= */
-
-.section {
-  padding: 6rem 1.5rem;
+.text-display {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.container-text {
-  max-width: 70ch;
-  margin: 0 auto;
-}
-
-/* =========================
-   CARD SYSTEM (GLOBAL FIX)
-========================= */
-
-/* IMPORTANT: replaces ALL old card usage safely */
-.card,
-.glass,
-[class*="glass"],
-[class*="card"] {
+.glass {
   background: rgba(255,255,255,0.05);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px;
-  transition: all 0.25s ease;
-  backdrop-filter: blur(16px);
-}
-
-.card:hover,
-.glass:hover {
-  transform: translateY(-5px);
-  border-color: rgba(255,255,255,0.2);
-  box-shadow: 0 25px 80px rgba(0,0,0,0.5);
-}
-
-/* =========================
-   BUTTON SYSTEM (GLOBAL STANDARD)
-========================= */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-weight: 500;
-
-  transition: all 0.2s ease;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-/* PRIMARY */
-.btn-primary {
-  background: linear-gradient(135deg, var(--accent1), var(--accent2));
-  color: black;
-  box-shadow: 0 0 40px rgba(124,58,237,0.25);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 60px rgba(124,58,237,0.4);
-}
-
-/* SECONDARY */
-.btn-secondary {
-  border: 1px solid var(--border);
-  background: transparent;
-  color: white;
-}
-
-.btn-secondary:hover {
-  border-color: rgba(255,255,255,0.25);
-}
-
-/* SUCCESS (WhatsApp / conversion) */
-.btn-success {
-  background: var(--accent3);
-  color: black;
-}
-
-.btn-success:hover {
-  filter: brightness(1.1);
-}
-
-/* =========================
-   GLOBAL SAFETY FIXES
-========================= */
-
-img {
-  max-width: 100%;
-  display: block;
-}
-
-a, button {
-  transition: all 0.2s ease;
-}
-/* =========================
-   SECTION MOOD SYSTEM
-========================= */
-
-/* HERO MOOD (high glow, open space) */
-.mood-hero {
-  position: relative;
-  padding: 8rem 1.5rem;
-}
-
-/* PROBLEM (tight, darker, heavier contrast) */
-.mood-problem {
-  background: radial-gradient(circle at top, rgba(255,255,255,0.03), transparent);
-  padding: 6rem 1.5rem;
-}
-
-/* SOLUTION (balanced clarity) */
-.mood-solution {
-  background: linear-gradient(to bottom, rgba(255,255,255,0.02), transparent);
-  padding: 6rem 1.5rem;
-}
-
-/* PROOF (slightly denser, structured) */
-.mood-proof {
-  background: rgba(255,255,255,0.02);
-  padding: 6rem 1.5rem;
-}
-
-/* PRICING (focus zone) */
-.mood-pricing {
-  background: radial-gradient(circle at center, rgba(124,58,237,0.08), transparent 60%);
-  padding: 7rem 1.5rem;
-}
-
-/* CTA (empty, dramatic breathing space) */
-.mood-cta {
-  background: radial-gradient(circle at bottom, rgba(34,211,238,0.08), transparent);
-  padding: 9rem 1.5rem;
-}
-/* =========================
-   CINEMATIC COLOR STORY SYSTEM
-========================= */
-
-/* HERO — purple awakening */
-.scene-hero {
-  background: radial-gradient(circle at top, rgba(124,58,237,0.18), transparent 60%);
-}
-
-/* PROBLEM — cold tension */
-.scene-problem {
-  background: radial-gradient(circle at top, rgba(239,68,68,0.10), transparent 70%);
-}
-
-/* MID CTA — neutral breath */
-.scene-proof {
-  background: radial-gradient(circle at center, rgba(255,255,255,0.04), transparent);
-}
-
-/* SOLUTION — clarity glow */
-.scene-solution {
-  background: radial-gradient(circle at top, rgba(34,211,238,0.12), transparent 60%);
-}
-
-/* PRICING — focus spotlight */
-.scene-pricing {
-  background: radial-gradient(circle at center, rgba(34,197,94,0.10), transparent 60%);
-}
-
-/* FINAL CTA — dramatic convergence */
-.scene-cta {
-  background: radial-gradient(circle at bottom, rgba(255,255,255,0.06), transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.08);
 }
