@@ -4,24 +4,20 @@ import { useEffect } from "react";
 export default function SmoothScroll({ children }) {
   useEffect(() => {
     const lenis = new Lenis({
-      lerp: 0.08,
-      smoothWheel: true
+      lerp: 0.07, // slower = more cinematic
+      smoothWheel: true,
+      smoothTouch: true
     });
-
-    let frameId;
 
     function raf(time) {
       lenis.raf(time);
-      frameId = requestAnimationFrame(raf);
+      requestAnimationFrame(raf);
     }
 
-    frameId = requestAnimationFrame(raf);
+    requestAnimationFrame(raf);
 
-    return () => {
-      cancelAnimationFrame(frameId);
-      lenis.destroy();
-    };
+    return () => lenis.destroy();
   }, []);
 
-  return <>{children}</>;
+  return children;
 }
