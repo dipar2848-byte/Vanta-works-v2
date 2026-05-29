@@ -1,26 +1,261 @@
-html, body {
-  background: #000;
-  color: white;
-  overflow-x: hidden;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================
+   BASE
+========================= */
+
+html {
+  scroll-behavior: smooth;
 }
 
-section {
-  position: relative;
+body {
+  margin: 0;
+  background: #000;
+  color: #fff;
+  overflow-x: hidden;
+  font-family: Inter, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.container-text {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* =========================
+   TYPOGRAPHY
+========================= */
+
+.text-display {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.text-h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.text-h2 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 600;
 }
 
 .text-body {
-  color: rgba(255,255,255,0.75);
-  line-height: 1.6;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.72);
 }
 
-.text-display {
-  font-size: clamp(2.5rem, 5vw, 4rem);
+/* =========================
+   BUTTONS
+========================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 24px;
+  border-radius: 14px;
+  text-decoration: none;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  transition: all 0.25s ease;
 }
+
+.btn-primary {
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #a855f7
+  );
+  color: white;
+  box-shadow:
+    0 10px 30px rgba(124, 58, 237, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.btn-success {
+  background: linear-gradient(
+    135deg,
+    #16a34a,
+    #22c55e
+  );
+  color: white;
+}
+
+/* =========================
+   GLASS CARDS
+========================= */
 
 .glass {
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(255,255,255,0.08);
+}
+
+.glass-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+}
+
+/* =========================
+   SECTION MOODS
+========================= */
+
+.mood-hero {
+  position: relative;
+  padding: 8rem 1.5rem;
+}
+
+.mood-problem {
+  padding: 7rem 1.5rem;
+}
+
+.mood-solution {
+  padding: 7rem 1.5rem;
+}
+
+.mood-proof {
+  padding: 6rem 1.5rem;
+}
+
+.mood-pricing {
+  padding: 8rem 1.5rem;
+}
+
+.mood-cta {
+  padding: 9rem 1.5rem;
+}
+
+/* =========================
+   CINEMATIC COLOR STORY
+========================= */
+
+.scene-hero {
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(124,58,237,0.16),
+      transparent 60%
+    );
+}
+
+.scene-problem {
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(239,68,68,0.08),
+      transparent 70%
+    );
+}
+
+.scene-proof {
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(255,255,255,0.03),
+      transparent
+    );
+}
+
+.scene-solution {
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(34,211,238,0.10),
+      transparent 60%
+    );
+}
+
+.scene-pricing {
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(34,197,94,0.08),
+      transparent 60%
+    );
+}
+
+.scene-cta {
+  background:
+    radial-gradient(
+      circle at bottom,
+      rgba(255,255,255,0.05),
+      transparent
+    );
+}
+
+/* =========================
+   NAVBAR
+========================= */
+
+.nav-blur {
+  backdrop-filter: blur(20px);
+  background: rgba(0,0,0,0.4);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
 }
