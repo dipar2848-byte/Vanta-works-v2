@@ -6,7 +6,9 @@ import Hero from "./components/sections/Hero";
 import Problem from "./components/sections/Problem";
 import Solution from "./components/sections/Solution";
 import Pricing from "./components/sections/Pricing";
-import CTA from "./components/sections/CTA";
+
+import MidCTA from "./components/sections/MidCTA";
+import FinalCTA from "./components/sections/FinalCTA";
 
 import CursorGlow from "./components/CursorGlow";
 import Chatbot from "./components/Chatbot";
@@ -22,7 +24,7 @@ export default function App() {
       <div className="bg-black text-white overflow-x-hidden">
         <CursorGlow />
 
-        {/* GLOBAL NAV */}
+        {/* NAVBAR */}
         <Navbar />
 
         {/* HERO */}
@@ -37,6 +39,13 @@ export default function App() {
           </div>
         </section>
 
+        {/* MID CTA (soft conversion nudge) */}
+        <section className="mood-proof">
+          <div className="container container-text text-center">
+            <MidCTA />
+          </div>
+        </section>
+
         {/* SOLUTION */}
         <section id="solution" className="mood-solution">
           <div className="container container-text text-center">
@@ -44,17 +53,17 @@ export default function App() {
           </div>
         </section>
 
-        {/* PRICING */}
+        {/* PRICING (decision point) */}
         <section id="pricing" className="mood-pricing">
           <div className="container">
             <Pricing />
           </div>
         </section>
 
-        {/* CTA */}
-        <section id="cta" className="mood-cta">
+        {/* FINAL CTA (hard conversion zone) */}
+        <section className="mood-cta">
           <div className="container container-text text-center">
-            <CTA />
+            <FinalCTA />
           </div>
         </section>
 
