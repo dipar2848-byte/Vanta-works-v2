@@ -3,104 +3,73 @@
 @tailwind utilities;
 
 /* =========================
-   BASE RESET + SYSTEM
+   BASE
 ========================= */
 
 html {
   scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  padding: 0;
-  background: #000;
-  color: #fff;
-  overflow-x: hidden;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: radial-gradient(circle at top, #0a0a0a, #000);
+  color: white;
+  font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 * {
   box-sizing: border-box;
 }
 
-img {
-  max-width: 100%;
-  display: block;
-}
-
-button {
-  cursor: pointer;
-}
-
 /* =========================
-   GLASS SYSTEM
+   TOKENS
 ========================= */
 
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+:root {
+  --border: rgba(255,255,255,0.08);
+  --muted: rgba(255,255,255,0.65);
+
+  --accent1: #7c3aed;
+  --accent2: #22d3ee;
+  --accent3: #22c55e;
 }
 
 /* =========================
    TYPOGRAPHY SYSTEM
-   (STRICT SCALE)
 ========================= */
 
-h1, h2, h3, h4 {
+h1, h2, h3 {
   letter-spacing: -0.03em;
   line-height: 1.1;
   margin: 0;
 }
 
 p {
-  line-height: 1.65;
+  line-height: 1.7;
   margin: 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--muted);
 }
 
-/* HERO TEXT */
 .text-display {
-  font-size: clamp(2.6rem, 5vw, 4.8rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
+  font-size: clamp(2.6rem, 5vw, 5rem);
+  font-weight: 800;
 }
 
-/* SECTION HEADINGS */
 .text-h1 {
-  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-size: clamp(2rem, 3vw, 3rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
 }
 
-/* SUB HEADINGS */
 .text-h2 {
-  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
   font-weight: 600;
 }
 
-/* BODY TEXT */
 .text-body {
   font-size: 1rem;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* MUTED TEXT */
-.text-muted {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* MICRO TEXT */
-.text-micro {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--muted);
 }
 
 /* =========================
@@ -122,18 +91,90 @@ p {
 }
 
 /* =========================
-   FOCUS + INTERACTION
+   CARD SYSTEM (GLOBAL FIX)
 ========================= */
 
-input, textarea {
-  font-family: inherit;
+/* IMPORTANT: replaces ALL old card usage safely */
+.card,
+.glass,
+[class*="glass"],
+[class*="card"] {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(16px);
 }
 
-a {
+.card:hover,
+.glass:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+}
+
+/* =========================
+   BUTTON SYSTEM (GLOBAL STANDARD)
+========================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 500;
+
+  transition: all 0.2s ease;
+  cursor: pointer;
   text-decoration: none;
 }
 
-/* smooth transitions globally */
-button, a, input {
+/* PRIMARY */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  color: black;
+  box-shadow: 0 0 40px rgba(124,58,237,0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 60px rgba(124,58,237,0.4);
+}
+
+/* SECONDARY */
+.btn-secondary {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: white;
+}
+
+.btn-secondary:hover {
+  border-color: rgba(255,255,255,0.25);
+}
+
+/* SUCCESS (WhatsApp / conversion) */
+.btn-success {
+  background: var(--accent3);
+  color: black;
+}
+
+.btn-success:hover {
+  filter: brightness(1.1);
+}
+
+/* =========================
+   GLOBAL SAFETY FIXES
+========================= */
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a, button {
   transition: all 0.2s ease;
 }
