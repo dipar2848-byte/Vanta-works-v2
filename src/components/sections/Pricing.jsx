@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 const plans = [
   {
     name: "Starter Package",
-    price: "₹14,999+",
+    price: "₹9,999+",
     desc: "High-converting website with lead system",
     features: [
       "Landing page + conversion system",
@@ -13,11 +13,11 @@ const plans = [
       "Mobile optimized design"
     ],
     message:
-      "Hi VantaWorks, I’m interested in the Starter Package (₹14,999+). Please share details."
+      "Hi VantaWorks, I’m interested in the Starter Package (₹9,999+). Please share details."
   },
   {
     name: "Growth System",
-    price: "₹34,999+",
+    price: "14,999+",
     desc: "Full CRM + booking + automation system",
     features: [
       "Full CRM dashboard (Supabase)",
@@ -28,11 +28,11 @@ const plans = [
       "Strategy call funnel"
     ],
     message:
-      "Hi VantaWorks, I want the Growth System (₹34,999+). I want CRM + booking automation setup."
+      "Hi VantaWorks, I want the Growth System (₹14,999+). I want CRM + booking automation setup."
   },
   {
     name: "Automation System",
-    price: "₹64,999+",
+    price: "₹34,999+",
     desc: "AI-ready full business automation engine",
     features: [
       "AI chatbot system architecture",
@@ -43,7 +43,7 @@ const plans = [
       "Scalable CRM infrastructure"
     ],
     message:
-      "Hi VantaWorks, I want the Automation System (₹64,999+). I need full AI + automation setup."
+      "Hi VantaWorks, I want the Automation System (₹34,999+). I need full AI + automation setup."
   }
 ];
 
