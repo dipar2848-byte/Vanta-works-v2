@@ -1,16 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
-
-import { router } from "./routes";
-
-import "./styles/global.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <HelmetProvider>
-      <RouterProvider router={router} />
-    </HelmetProvider>
-  </React.StrictMode>
+  <div
+    style={{
+      minHeight: "100vh",
+      background: "black",
+      color: "white",
+      padding: "40px",
+      fontSize: "40px"
+    }}
+  >
+    MAIN JSX WORKING
+  </div>
 );
