@@ -1,5 +1,5 @@
-import Lenis from '@studio-freight/lenis';
-import { useEffect } from 'react';
+import Lenis from "@studio-freight/lenis";
+import { useEffect } from "react";
 
 export default function SmoothScroll({ children }) {
   useEffect(() => {
@@ -8,13 +8,20 @@ export default function SmoothScroll({ children }) {
       smoothWheel: true
     });
 
+    let frameId;
+
     function raf(time) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      frameId = requestAnimationFrame(raf);
     }
 
-    requestAnimationFrame(raf);
+    frameId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      lenis.destroy();
+    };
   }, []);
 
-  return children;
+  return <>{children}</>;
 }
