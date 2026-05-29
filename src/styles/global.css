@@ -178,3 +178,42 @@ img {
 a, button {
   transition: all 0.2s ease;
 }
+/* =========================
+   SECTION MOOD SYSTEM
+========================= */
+
+/* HERO MOOD (high glow, open space) */
+.mood-hero {
+  position: relative;
+  padding: 8rem 1.5rem;
+}
+
+/* PROBLEM (tight, darker, heavier contrast) */
+.mood-problem {
+  background: radial-gradient(circle at top, rgba(255,255,255,0.03), transparent);
+  padding: 6rem 1.5rem;
+}
+
+/* SOLUTION (balanced clarity) */
+.mood-solution {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.02), transparent);
+  padding: 6rem 1.5rem;
+}
+
+/* PROOF (slightly denser, structured) */
+.mood-proof {
+  background: rgba(255,255,255,0.02);
+  padding: 6rem 1.5rem;
+}
+
+/* PRICING (focus zone) */
+.mood-pricing {
+  background: radial-gradient(circle at center, rgba(124,58,237,0.08), transparent 60%);
+  padding: 7rem 1.5rem;
+}
+
+/* CTA (empty, dramatic breathing space) */
+.mood-cta {
+  background: radial-gradient(circle at bottom, rgba(34,211,238,0.08), transparent);
+  padding: 9rem 1.5rem;
+}
