@@ -1,5 +1,7 @@
 import { Helmet } from "react-helmet-async";
 
+import Navbar from "./components/Navbar";
+
 import Hero from "./components/sections/Hero";
 import Problem from "./components/sections/Problem";
 import MidCTA from "./components/sections/MidCTA";
@@ -22,24 +24,25 @@ export default function App() {
       <div className="bg-black text-white overflow-x-hidden">
         <CursorGlow />
 
-        {/* GLOBAL PAGE WRAPPER */}
-        <main className="flex flex-col">
-          
-          {/* HERO (full height focus section) */}
+        {/* NAVBAR */}
+        <Navbar />
+
+        {/* MAIN CONTENT (offset for fixed navbar) */}
+        <main className="pt-24 flex flex-col">
+
+          {/* HERO */}
           <section className="min-h-screen flex items-center justify-center px-6">
-            <div className="container text-center">
-              <Hero />
-            </div>
+            <Hero />
           </section>
 
           {/* PROBLEM */}
-          <section className="section">
+          <section id="problem" className="section">
             <div className="container container-text text-center">
               <Problem />
             </div>
           </section>
 
-          {/* MID CTA (high intent capture) */}
+          {/* MID CTA */}
           <section className="section bg-white/5">
             <div className="container container-text text-center">
               <MidCTA />
@@ -47,7 +50,7 @@ export default function App() {
           </section>
 
           {/* SOLUTION */}
-          <section className="section">
+          <section id="solution" className="section">
             <div className="container container-text text-center">
               <Solution />
             </div>
@@ -61,14 +64,14 @@ export default function App() {
           </section>
 
           {/* PRICING */}
-          <section className="section">
+          <section id="pricing" className="section">
             <div className="container">
               <Pricing />
             </div>
           </section>
 
-          {/* FINAL CTA (conversion close) */}
-          <section className="section bg-gradient-to-b from-black via-zinc-950 to-black">
+          {/* FINAL CTA */}
+          <section id="cta" className="section bg-gradient-to-b from-black via-zinc-950 to-black">
             <div className="container container-text text-center">
               <FinalCTA />
             </div>
@@ -76,7 +79,6 @@ export default function App() {
 
         </main>
 
-        {/* FLOATING SYSTEMS */}
         <Chatbot />
       </div>
     </SmoothScroll>
