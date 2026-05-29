@@ -40,60 +40,64 @@ export default function LeadForm() {
 
   if (done) {
     return (
-      <div className="text-green-400">
-        Thanks! We’ll contact you soon.
+      <div className="text-green-400 text-sm">
+        ✓ Request received. We’ll contact you shortly.
       </div>
     );
   }
 
+  const inputStyle =
+    "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-white/30 focus:bg-white/10 transition";
+
   return (
-    <div className="glass p-6 rounded-2xl space-y-3">
+    <div className="space-y-3 text-left">
       <input
         name="name"
-        placeholder="Name"
-        className="w-full p-2 text-black"
+        placeholder="Your Name"
         value={form.name}
         onChange={handleChange}
+        className={inputStyle}
       />
 
       <input
         name="business"
-        placeholder="Business"
-        className="w-full p-2 text-black"
+        placeholder="Business Name"
         value={form.business}
         onChange={handleChange}
+        className={inputStyle}
       />
 
       <input
         name="email"
         placeholder="Email"
-        className="w-full p-2 text-black"
         value={form.email}
         onChange={handleChange}
+        className={inputStyle}
       />
 
       <input
         name="phone"
-        placeholder="Phone"
-        className="w-full p-2 text-black"
+        placeholder="Phone Number"
         value={form.phone}
         onChange={handleChange}
+        className={inputStyle}
       />
 
       <textarea
         name="message"
-        placeholder="Message"
-        className="w-full p-2 text-black"
+        placeholder="Tell us about your business..."
         value={form.message}
         onChange={handleChange}
+        rows="4"
+        className={`${inputStyle} resize-none`}
       />
 
       <button
         onClick={submit}
         disabled={loading}
-        className="w-full bg-blue-600 py-2 rounded"
+        className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-white/10 to-white/5 border border-white/10 hover:border-white/30 text-white font-medium transition"
       >
-        {loading ? "Sending..." : "Get Free Audit"}
+        {loading ? "Sending..." : "Get Free Growth Audit"}
       </button>
     </div>
   );
