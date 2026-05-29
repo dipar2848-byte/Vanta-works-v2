@@ -23,51 +23,48 @@ export default function App() {
 
       <div className="bg-black text-white overflow-x-hidden">
         <CursorGlow />
-
-        {/* NAVBAR */}
         <Navbar />
 
-        {/* HERO */}
-        <section className="mood-hero min-h-screen flex items-center justify-center">
+        {/* HERO SCENE */}
+        <section className="scene-hero mood-hero min-h-screen flex items-center justify-center">
           <Hero />
         </section>
 
-        {/* PROBLEM */}
-        <section id="problem" className="mood-problem">
+        {/* PROBLEM SCENE */}
+        <section id="problem" className="scene-problem mood-problem">
           <div className="container container-text text-center">
             <Problem />
           </div>
         </section>
 
-        {/* MID CTA (soft conversion nudge) */}
-        <section className="mood-proof">
+        {/* MID CTA SCENE */}
+        <section className="scene-proof mood-proof">
           <div className="container container-text text-center">
             <MidCTA />
           </div>
         </section>
 
-        {/* SOLUTION */}
-        <section id="solution" className="mood-solution">
+        {/* SOLUTION SCENE */}
+        <section id="solution" className="scene-solution mood-solution">
           <div className="container container-text text-center">
             <Solution />
           </div>
         </section>
 
-        {/* PRICING (decision point) */}
-        <section id="pricing" className="mood-pricing">
+        {/* PRICING SCENE */}
+        <section id="pricing" className="scene-pricing mood-pricing">
           <div className="container">
             <Pricing />
           </div>
         </section>
 
-        {/* FINAL CTA (hard conversion zone) */}
-        <section className="mood-cta">
+        {/* FINAL CTA SCENE */}
+        <section className="scene-cta mood-cta">
           <div className="container container-text text-center">
             <FinalCTA />
           </div>
         </section>
 
-        {/* CHATBOT */}
         <Chatbot />
       </div>
     </SmoothScroll>
