@@ -6,13 +6,25 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  const { data, error } = await supabase
-    .from("chatbot_logs")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(100);
+  try {
+    const { data, error } = await supabase
+      .from("chatbot_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
 
-  if (error) return res.status(500).json([]);
+    if (error) {
+      return res.status(500).json({
+        error: "Database fetch failed",
+        details: error.message,
+      });
+    }
 
-  res.status(200).json(data);
+    return res.status(200).json(data || []);
+  } catch (err) {
+    return res.status(500).json({
+      error: "Server crash",
+      details: err.message,
+    });
+  }
 }
