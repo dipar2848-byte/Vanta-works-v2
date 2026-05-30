@@ -3,80 +3,88 @@ import { useMemo, useRef, useContext } from "react";
 import * as THREE from "three";
 import { ScrollContext } from "../motion/ScrollProvider";
 
-function Particles() {
-  const mesh = useRef();
+function SceneCore() {
   const progress = useContext(ScrollContext);
+  const points = useRef();
 
-  const count = 1200;
+  const count = 1500;
 
   const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
+    const p = new Float32Array(count * 3);
 
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 12;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 12;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 12;
+      p[i * 3] = (Math.random() - 0.5) * 14;
+      p[i * 3 + 1] = (Math.random() - 0.5) * 14;
+      p[i * 3 + 2] = (Math.random() - 0.5) * 14;
     }
 
-    return pos;
+    return p;
   }, []);
 
-  useFrame((state) => {
-    if (!mesh.current) return;
+  useFrame(() => {
+    if (!points.current) return;
 
-    mesh.current.rotation.y += 0.0008 + progress * 0.002;
-    mesh.current.rotation.x += 0.0003;
+    // global rotation drift
+    points.current.rotation.y += 0.0006 + progress * 0.002;
+    points.current.rotation.x += 0.0002;
 
-    // subtle scroll-based drift
-    mesh.current.position.y = -progress * 0.8;
+    // vertical story drift
+    points.current.position.y = -progress * 1.2;
   });
 
-  return (
-    <points ref={mesh}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
+  const moodColor = useMemo(() => {
+    if (progress < 0.25) return "#7c3aed"; // HERO - purple
+    if (progress < 0.5) return "#ef4444";  // PROBLEM - red tension
+    if (progress < 0.75) return "#22d3ee"; // SOLUTION - cyan
+    return "#22c55e"; // CTA - growth green
+  }, [progress]);
 
-      <pointsMaterial
-        size={0.02}
-        color={progress > 0.5 ? "#22d3ee" : "#7c3aed"}
-        transparent
-        opacity={0.7}
-      />
-    </points>
-  );
-}
-
-function Lights() {
-  const progress = useContext(ScrollContext);
+  const bgColor = useMemo(() => {
+    if (progress < 0.25) return "#050014";
+    if (progress < 0.5) return "#0a0303";
+    if (progress < 0.75) return "#020b10";
+    return "#020807";
+  }, [progress]);
 
   return (
     <>
-      <ambientLight intensity={0.4 + progress * 0.3} />
+      {/* dynamic background */}
+      <color attach="background" args={[bgColor]} />
+
+      {/* lighting mood shift */}
+      <ambientLight intensity={0.4 + progress * 0.4} />
 
       <directionalLight
         position={[5, 5, 5]}
         intensity={1.2}
-        color={progress > 0.5 ? "#22d3ee" : "#7c3aed"}
+        color={moodColor}
       />
 
-      <pointLight
-        position={[-5, -2, -2]}
-        intensity={0.8}
-        color="#a855f7"
-      />
+      <pointLight position={[-5, -3, -2]} intensity={0.8} color="#a855f7" />
+
+      {/* particles */}
+      <points ref={points}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={positions.length / 3}
+            array={positions}
+            itemSize={3}
+          />
+        </bufferGeometry>
+
+        <pointsMaterial
+          size={0.018}
+          color={moodColor}
+          transparent
+          opacity={0.75}
+        />
+      </points>
     </>
   );
 }
 
 export default function Scene() {
-  const progress = useContext(ScrollContext);
-
   return (
     <Canvas
       camera={{ position: [0, 0, 6], fov: 55 }}
@@ -87,13 +95,7 @@ export default function Scene() {
         pointerEvents: "none"
       }}
     >
-      <color
-        attach="background"
-        args={[progress > 0.5 ? "#020617" : "#050014"]}
-      />
-
-      <Lights />
-      <Particles />
+      <SceneCore />
     </Canvas>
   );
 }
