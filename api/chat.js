@@ -6,95 +6,6 @@ const supabase = createClient(
 );
 
 /* =========================
-   MEMORY EXTRACTION
-========================= */
-function extractMemory(messages) {
-  const text = messages.map(m => m.content).join(" ").toLowerCase();
-
-  const name = text.match(/my name is ([a-z]+)/i)?.[1];
-  const business = text.match(/(business|company) is ([a-z ]+)/i)?.[2];
-
-  return { name, business };
-}
-
-/* =========================
-   STAGE ENGINE
-========================= */
-function detectStage(intent, score, lastStage) {
-  if (score === "hot") return "hot_lead";
-  if (intent === "conversion") return "ready_to_close";
-  if (intent === "pricing") return "interested";
-  if (lastStage === "hot_lead") return "hot_lead";
-
-  return "visitor";
-}
-
-/* =========================
-   INTENT ENGINE (SMART RULES)
-========================= */
-function detectIntent(text) {
-  const t = text.toLowerCase();
-
-  if (t.includes("price") || t.includes("cost") || t.includes("budget"))
-    return "pricing";
-
-  if (t.includes("service") || t.includes("what do you do"))
-    return "services";
-
-  if (t.includes("book") || t.includes("call") || t.includes("contact"))
-    return "conversion";
-
-  if (t.includes("whatsapp")) return "whatsapp";
-
-  if (t.includes("help")) return "support";
-
-  return "general";
-}
-
-/* =========================
-   LEAD SCORING ENGINE
-========================= */
-function scoreLead(text, memory) {
-  let score = 0;
-
-  if (text.length > 25) score += 1;
-  if (text.includes("want") || text.includes("build")) score += 2;
-  if (text.includes("book") || text.includes("call")) score += 5;
-
-  if (memory.name) score += 1;
-  if (memory.business) score += 2;
-
-  if (score >= 6) return "hot";
-  if (score >= 3) return "warm";
-  return "cold";
-}
-
-/* =========================
-   RESPONSE ENGINE (SALES FLOW)
-========================= */
-function generateReply(intent, score, memory, stage) {
-  const name = memory.name ? ` ${memory.name}` : "";
-
-  if (stage === "hot_lead") {
-    return `Perfect${name}. I can set up a full system for you (CRM + automation + leads). Do you want a complete setup or just website first?`;
-  }
-
-  if (stage === "ready_to_close") {
-    return `Got it${name}. What’s your current monthly goal for leads or sales?`;
-  }
-
-  if (intent === "pricing") {
-    return `Our systems start from ₹14,999${name}. What type of business are you running?`;
-  }
-
-  if (intent === "services") {
-    return `We build conversion systems — websites, CRM tracking, WhatsApp automation, and funnels. What business are you in?`;
-  }
-
-  return `I can help you with pricing, setup, or improving your lead generation. What are you trying to achieve?`;
-}
-
-/* =========================
    MAIN HANDLER
 ========================= */
 export default async function handler(req, res) {
@@ -108,64 +19,209 @@ export default async function handler(req, res) {
 
     const { messages = [], email } = body;
 
-    const lastMessage =
-      messages[messages.length - 1]?.content || "";
+    const last = normalize(messages[messages.length - 1]?.content || "");
 
-    const memory = extractMemory(messages);
-    const intent = detectIntent(lastMessage);
-    const score = scoreLead(lastMessage, memory);
+    /* =========================
+       LOAD MEMORY
+    ========================= */
+    const memory = await loadMemory(email);
 
-    // get last stage from DB (optional)
-    const { data: existing } = await supabase
-      .from("chatbot_logs")
-      .select("stage")
-      .eq("email", email)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    /* =========================
+       INTENT DETECTION
+    ========================= */
+    const intent = detectIntent(last);
 
-    const stage = detectStage(intent, score, existing?.stage);
+    /* =========================
+       LEAD SCORING ENGINE
+    ========================= */
+    const leadScore = calculateLeadScore(last, memory, intent);
 
-    const reply = generateReply(intent, score, memory, stage);
+    const stage = getStage(leadScore);
 
-    // SAVE TO CRM
+    /* =========================
+       SALES RESPONSE ENGINE
+    ========================= */
+    const reply = generateSalesReply({
+      intent,
+      stage,
+      leadScore,
+      memory,
+      last
+    });
+
+    /* =========================
+       UPDATE MEMORY
+    ========================= */
+    const updatedMemory = {
+      ...memory,
+      last_intent: intent,
+      lead_score: leadScore,
+      stage
+    };
+
+    /* =========================
+       SAVE MEMORY + LOGS
+    ========================= */
+    if (email) {
+      await supabase.from("chatbot_memory").upsert([
+        {
+          email,
+          memory: updatedMemory,
+          lead_score: leadScore,
+          stage,
+          updated_at: new Date().toISOString()
+        }
+      ]);
+    }
+
     await supabase.from("chatbot_logs").insert([
       {
         email: email || null,
-        message: lastMessage,
+        message: last,
         intent,
-        score,
         stage,
+        lead_score: leadScore,
         reply,
         created_at: new Date().toISOString()
       }
     ]);
 
-    // UPDATE LEAD TABLE
-    if (email) {
-      await supabase
-        .from("leads")
-        .update({
-          last_intent: intent,
-          lead_score: score,
-          stage
-        })
-        .eq("email", email);
-    }
-
     return res.json({
       reply,
       intent,
-      score,
-      stage
+      stage,
+      leadScore
     });
 
   } catch (err) {
-    console.log(err);
-
     return res.status(500).json({
       error: "Chat failed",
       details: err.message
     });
   }
+}
+
+/* =========================
+   MEMORY LOADING
+========================= */
+async function loadMemory(email) {
+  if (!email) return {};
+
+  const { data } = await supabase
+    .from("chatbot_memory")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  return data?.memory || {};
+}
+
+/* =========================
+   INTENT DETECTION
+========================= */
+function detectIntent(text) {
+  if (text.includes("price") || text.includes("cost")) return "pricing";
+  if (text.includes("automation") || text.includes("crm")) return "automation";
+  if (text.includes("website")) return "services";
+  if (text.includes("call") || text.includes("book")) return "conversion";
+  return "general";
+}
+
+/* =========================
+   LEAD SCORING ENGINE (CORE SALES LOGIC)
+========================= */
+function calculateLeadScore(text, memory, intent) {
+  let score = memory.lead_score || 0;
+
+  // interest signals
+  if (intent === "pricing") score += 20;
+  if (intent === "conversion") score += 40;
+  if (text.includes("need")) score += 10;
+  if (text.includes("now")) score += 15;
+
+  // engagement history
+  if ((memory.message_count || 0) > 5) score += 10;
+
+  return Math.min(score, 100);
+}
+
+/* =========================
+   STAGE ENGINE
+========================= */
+function getStage(score) {
+  if (score >= 70) return "hot";
+  if (score >= 40) return "warm";
+  if (score >= 20) return "interested";
+  return "cold";
+}
+
+/* =========================
+   SALES RESPONSE ENGINE
+========================= */
+function generateSalesReply({ intent, stage, leadScore }) {
+  const base = RESPONSE_BANK[intent] || RESPONSE_BANK.general;
+
+  const opening = random(base);
+
+  if (stage === "hot") {
+    return (
+      "Perfect — I think your setup is ready for execution. " +
+      "I can get this fully structured for you (CRM + automation + leads). " +
+      "Should I prepare a full system plan or connect you for setup?"
+    );
+  }
+
+  if (stage === "warm") {
+    return (
+      opening +
+      " I can already see a strong use case for automation here. " +
+      "Do you want a full system or just lead capture first?"
+    );
+  }
+
+  if (stage === "interested") {
+    return (
+      opening +
+      " This can be turned into a proper lead system. " +
+      "What type of business are you running?"
+    );
+  }
+
+  return (
+    opening +
+    " Let me understand your goal first so I can guide you properly."
+  );
+}
+
+/* =========================
+   RESPONSE BANK
+========================= */
+const RESPONSE_BANK = {
+  pricing: [
+    "Pricing depends on system size and automation level.",
+    "We structure pricing based on business requirements."
+  ],
+  automation: [
+    "Automation connects CRM, WhatsApp, and lead tracking.",
+    "This removes manual follow-ups completely."
+  ],
+  services: [
+    "We build conversion-focused systems, not just websites.",
+    "We create lead generation + automation systems."
+  ],
+  general: [
+    "Let me understand your requirement first.",
+    "I can guide you based on your business goal."
+  ]
+};
+
+/* =========================
+   UTIL
+========================= */
+function random(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function normalize(t) {
+  return t.toLowerCase().replace(/[^a-z0-9\s]/g, " ").trim();
 }
