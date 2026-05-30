@@ -5,126 +5,206 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const memory = new Map();
+/* ─────────────────────────────
+   FLOW SYSTEM (BASE STRUCTURE)
+───────────────────────────── */
 
-// SYSTEM KNOWLEDGE
-const SYSTEM = {
-  intro:
-    "I help businesses get more customers by tracking leads and automatically following up so no customer is lost.",
-};
-
-// FLOW OPTIONS
 const FLOWS = {
   start: {
     msg: "Hi 👋 What would you like to do?",
     options: ["Learn more", "Pricing", "Book demo"],
   },
   learn: {
-    msg: SYSTEM.intro,
+    msg:
+      "This system helps you turn visitors into customers by tracking leads and automatically following up.",
     options: ["Pricing", "Book demo"],
   },
   pricing: {
-    msg: "We have flexible pricing based on your business size.",
+    msg: "We offer flexible pricing based on your business size.",
     options: ["Small", "Medium", "Enterprise"],
   },
   demo: {
-    msg: "I can show you how leads become customers automatically.",
+    msg: "I can show you how leads are captured and converted automatically.",
     options: ["Start demo", "Talk to sales"],
   },
 };
 
-function getMemory(userId) {
-  if (!memory.has(userId)) {
-    memory.set(userId, { flow: "start", score: 0 });
-  }
-  return memory.get(userId);
-}
+/* ─────────────────────────────
+   INTENT ENGINE (IMPROVED)
+───────────────────────────── */
 
 function detectIntent(text = "") {
-  const t = text.toLowerCase();
+  const t = text.toLowerCase().trim();
 
-  if (/hi|hello|hey/.test(t)) return "start";
-  if (/learn|what|this/.test(t)) return "learn";
-  if (/price|pricing/.test(t)) return "pricing";
-  if (/demo/.test(t)) return "demo";
+  if (/(hi|hello|hey|yo|sup)/.test(t)) return "start";
+  if (/(what.*this|how.*work|explain|learn)/.test(t)) return "learn";
+  if (/(price|pricing|cost|plan)/.test(t)) return "pricing";
+  if (/(demo|show.*me|trial)/.test(t)) return "demo";
 
-  return "fallback";
+  return "unknown";
 }
 
-function score(intent, current) {
-  const map = {
+/* ─────────────────────────────
+   SIMPLE LEAD SCORING
+───────────────────────────── */
+
+function calculateScore(intent, current = 0, message = "") {
+  let scoreMap = {
     start: 5,
     learn: 10,
-    pricing: 20,
-    demo: 30,
-    fallback: 0,
+    pricing: 25,
+    demo: 40,
+    unknown: 0,
   };
-  return Math.min(100, current + (map[intent] || 0));
+
+  let score = current + (scoreMap[intent] || 0);
+
+  if (message.length > 40) score += 5;
+  if (/(buy|purchase|signup|get started)/.test(message.toLowerCase())) {
+    score += 15;
+  }
+
+  return Math.min(100, score);
 }
 
-function flowUpdate(flow, intent) {
-  if (intent === "learn") return "learn";
-  if (intent === "pricing") return "pricing";
-  if (intent === "demo") return "demo";
-  return flow;
+/* ─────────────────────────────
+   FLOW RESOLVER (MORE FLEXIBLE)
+───────────────────────────── */
+
+function resolveFlow(currentFlow, intent) {
+  const transitions = {
+    start: ["learn", "pricing", "demo"],
+    learn: ["pricing", "demo"],
+    pricing: ["demo"],
+    demo: ["demo"],
+  };
+
+  const nextOptions = transitions[currentFlow] || ["start"];
+
+  if (nextOptions.includes(intent)) {
+    return intent;
+  }
+
+  return currentFlow;
 }
 
-function build(flow) {
+/* ─────────────────────────────
+   MEMORY (PERSISTENT - SUPABASE)
+───────────────────────────── */
+
+async function getSession(userId) {
+  let { data } = await supabase
+    .from("chat_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (!data) {
+    const newSession = {
+      user_id: userId,
+      flow: "start",
+      score: 0,
+    };
+
+    await supabase.from("chat_sessions").insert([newSession]);
+    return newSession;
+  }
+
+  return data;
+}
+
+async function saveSession(userId, flow, score) {
+  await supabase
+    .from("chat_sessions")
+    .update({
+      flow,
+      score,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId);
+}
+
+/* ─────────────────────────────
+   CHAT RESPONSE BUILDER
+───────────────────────────── */
+
+function buildResponse(flow) {
   const f = FLOWS[flow] || FLOWS.start;
+
   return {
     reply: f.msg,
     options: f.options,
   };
 }
 
-async function log(data) {
-  try {
-    await supabase.from("chatbot_logs").insert([data]);
-  } catch (e) {
-    console.log(e.message);
-  }
+/* ─────────────────────────────
+   FALLBACK (SMART)
+───────────────────────────── */
+
+function fallbackResponse() {
+  return {
+    reply:
+      "I didn’t fully understand that. Do you want pricing, a demo, or an explanation of how it works?",
+    options: ["Pricing", "Demo", "How it works"],
+  };
 }
+
+/* ─────────────────────────────
+   MAIN HANDLER
+───────────────────────────── */
 
 export default async function handler(req, res) {
   try {
     const body =
       typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-    const messages = body?.messages || [];
-    const userId = body?.userId || "guest";
+    const { message = "", userId = "guest" } = body;
 
-    const last = messages[messages.length - 1]?.content || "";
+    // 1. Load session
+    const session = await getSession(userId);
 
-    const mem = getMemory(userId);
+    // 2. Detect intent
+    const intent = detectIntent(message);
 
-    const intent = detectIntent(last);
+    // 3. Update flow
+    let flow = resolveFlow(session.flow, intent);
 
-    mem.flow = flowUpdate(mem.flow, intent);
-    mem.score = score(intent, mem.score);
+    // 4. Score user
+    let score = calculateScore(intent, session.score, message);
 
-    const response = build(mem.flow);
+    // 5. Build response
+    let response =
+      intent === "unknown"
+        ? fallbackResponse()
+        : buildResponse(flow);
 
-    await log({
-      user_id: userId,
-      message: last,
-      intent,
-      flow: mem.flow,
-      score: mem.score,
-      created_at: new Date().toISOString(),
-    });
+    // 6. Save session state
+    await saveSession(userId, flow, score);
 
+    // 7. Log CRM event
+    await supabase.from("chatbot_logs").insert([
+      {
+        user_id: userId,
+        message,
+        intent,
+        flow,
+        score,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    // 8. Return response
     return res.status(200).json({
       reply: response.reply,
       options: response.options,
-      flow: mem.flow,
-      score: mem.score,
+      flow,
+      score,
     });
-  } catch (e) {
-    return res.status(200).json({
-      reply: "How can I help you today?",
-      options: ["Learn more", "Pricing", "Demo"],
-      flow: "start",
-      score: 0,
+  } catch (err) {
+    return res.status(500).json({
+      reply: "Something went wrong. Please try again.",
+      options: ["Pricing", "Demo", "Help"],
+      error: err.message,
     });
   }
 }
