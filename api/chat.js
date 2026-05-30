@@ -19,56 +19,55 @@ export default async function handler(req, res) {
 
     const { messages = [], email } = body;
 
-    if (!messages.length) {
-      return res.json({
-        reply: "Please send a message first."
-      });
-    }
-
     const userMessage =
       messages[messages.length - 1]?.content || "";
 
-    let reply = "";
+    const intent = detectIntent(userMessage);
+
+    let reply;
 
     /* =========================
-       TRY GROQ (PRIMARY AI)
+       1. TRY GROQ (OPTIONAL)
     ========================= */
     try {
       reply = await callGroq(messages);
     } catch (err) {
-      console.error("Groq failed:", err.message);
-
-      /* =========================
-         FALLBACK RESPONSE (SAFE)
-      ========================= */
-      reply = fallbackAI(userMessage);
+      console.log("Groq failed → switching to local intelligence");
+      reply = localIntelligence(userMessage, intent);
     }
 
     /* =========================
-       CRM LOGGING (SAFE ALWAYS)
+       SAFETY GUARANTEE
+    ========================= */
+    if (!reply || reply.trim().length < 3) {
+      reply = localIntelligence(userMessage, intent);
+    }
+
+    /* =========================
+       CRM LOGGING
     ========================= */
     await supabase.from("chatbot_logs").insert([
       {
         email: email || null,
         message: userMessage,
+        intent,
         reply,
         created_at: new Date().toISOString()
       }
     ]);
 
-    return res.json({ reply });
+    return res.json({ reply, intent });
 
   } catch (err) {
-    return res.status(500).json({
+    return res.json({
       reply:
-        "System error occurred. Please try again.",
-      error: err.message
+        "I understand your request. Can you give me a bit more detail so I can help you better?"
     });
   }
 }
 
 /* =========================
-   GROQ CALL (SAFE + DEBUGGED)
+   GROQ (OPTIONAL LAYER)
 ========================= */
 async function callGroq(messages) {
   const response = await fetch(
@@ -85,7 +84,7 @@ async function callGroq(messages) {
           {
             role: "system",
             content:
-              "You are a helpful business assistant. Respond naturally, clearly, and avoid repetition."
+              "You are a business assistant. Be natural, avoid repetition."
           },
           ...messages
         ],
@@ -96,36 +95,54 @@ async function callGroq(messages) {
 
   const data = await response.json();
 
-  console.log("GROQ RESPONSE:", JSON.stringify(data));
+  const text = data?.choices?.[0]?.message?.content;
 
-  const reply = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Invalid Groq response");
 
-  if (!reply) {
-    throw new Error(
-      data?.error?.message || "Empty response from Groq"
-    );
-  }
-
-  return reply;
+  return text;
 }
 
 /* =========================
-   FALLBACK AI (NEVER BLANK)
+   LOCAL INTELLIGENCE ENGINE
+   (THIS IS NOW YOUR CORE SYSTEM)
 ========================= */
-function fallbackAI(text) {
+function localIntelligence(text, intent) {
   const t = text.toLowerCase();
 
-  if (t.includes("sales")) {
-    return "I understand you're looking to increase sales. That usually requires a proper lead generation system and follow-up process. I can help you structure that.";
-  }
+  const templates = {
+    sales: [
+      "To improve sales, you need a structured lead system that captures and follows up automatically.",
+      "Sales usually increase when you improve your conversion flow, not just traffic."
+    ],
 
-  if (t.includes("website")) {
-    return "A good website alone isn't enough. You need a system that converts visitors into leads.";
-  }
+    automation: [
+      "Automation can connect your leads, CRM, and messaging into one system.",
+      "You can remove manual follow-ups by setting up workflows."
+    ],
 
-  if (t.includes("automation")) {
-    return "Automation helps you handle leads, follow-ups, and customer flow without manual effort.";
-  }
+    pricing: [
+      "Pricing depends on the level of automation and features required."
+    ],
 
-  return "I understand. Can you tell me a bit more about what you're trying to achieve?";
+    general: [
+      "I understand. Can you tell me a bit more so I can guide you properly?"
+    ]
+  };
+
+  const pool = templates[intent] || templates.general;
+
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/* =========================
+   INTENT DETECTION
+========================= */
+function detectIntent(text) {
+  const t = text.toLowerCase();
+
+  if (t.includes("sales") || t.includes("leads")) return "sales";
+  if (t.includes("automation") || t.includes("crm")) return "automation";
+  if (t.includes("price") || t.includes("cost")) return "pricing";
+
+  return "general";
 }
