@@ -1,123 +1,64 @@
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+import { createClient } from "@supabase/supabase-js";
 
-  try {
-    const body =
-      typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-
-    const { messages = [] } = body;
-
-    const text =
-      normalize(messages[messages.length - 1]?.content || "");
-
-    const memory = extractMemory(messages);
-
-    const intent = detectIntentByScore(text);
-    const score = scoreLead(text, memory);
-
-    const reply = generateReply(intent, memory, score);
-
-    return res.json({
-      reply,
-      intent,
-      score
-    });
-
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      error: "Chat failed",
-      details: err.message
-    });
-  }
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 /* =========================
-   TEXT NORMALIZATION
+   MEMORY EXTRACTION
 ========================= */
-function normalize(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+function extractMemory(messages) {
+  const text = messages.map(m => m.content).join(" ").toLowerCase();
+
+  const name = text.match(/my name is ([a-z]+)/i)?.[1];
+  const business = text.match(/(business|company) is ([a-z ]+)/i)?.[2];
+
+  return { name, business };
 }
 
 /* =========================
-   SEMANTIC INTENT SCORING
-   (NO DIRECT KEYWORD CHECKS)
+   STAGE ENGINE
 ========================= */
-function detectIntentByScore(text) {
-  const intents = {
-    pricing: [
-      "price",
-      "cost",
-      "how much",
-      "pricing",
-      "charges",
-      "rate",
-      "expensive",
-      "budget"
-    ],
-    services: [
-      "what do you do",
-      "service",
-      "offer",
-      "build",
-      "website",
-      "system"
-    ],
-    conversion: [
-      "contact",
-      "call",
-      "book",
-      "meeting",
-      "appointment",
-      "demo"
-    ],
-    whatsapp: [
-      "whatsapp",
-      "message me",
-      "chat on whatsapp"
-    ],
-    ai: [
-      "ai",
-      "automation",
-      "chatbot"
-    ]
-  };
+function detectStage(intent, score, lastStage) {
+  if (score === "hot") return "hot_lead";
+  if (intent === "conversion") return "ready_to_close";
+  if (intent === "pricing") return "interested";
+  if (lastStage === "hot_lead") return "hot_lead";
 
-  let bestIntent = "general";
-  let bestScore = 0;
-
-  for (const [intent, patterns] of Object.entries(intents)) {
-    let score = 0;
-
-    for (const pattern of patterns) {
-      if (text.includes(pattern)) {
-        score += pattern.length; // longer phrases = stronger signal
-      }
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestIntent = intent;
-    }
-  }
-
-  return bestIntent;
+  return "visitor";
 }
 
 /* =========================
-   LEAD SCORING (SMARTER)
+   INTENT ENGINE (SMART RULES)
+========================= */
+function detectIntent(text) {
+  const t = text.toLowerCase();
+
+  if (t.includes("price") || t.includes("cost") || t.includes("budget"))
+    return "pricing";
+
+  if (t.includes("service") || t.includes("what do you do"))
+    return "services";
+
+  if (t.includes("book") || t.includes("call") || t.includes("contact"))
+    return "conversion";
+
+  if (t.includes("whatsapp")) return "whatsapp";
+
+  if (t.includes("help")) return "support";
+
+  return "general";
+}
+
+/* =========================
+   LEAD SCORING ENGINE
 ========================= */
 function scoreLead(text, memory) {
   let score = 0;
 
-  if (text.length > 20) score += 1;
-  if (text.includes("build") || text.includes("want")) score += 2;
+  if (text.length > 25) score += 1;
+  if (text.includes("want") || text.includes("build")) score += 2;
   if (text.includes("book") || text.includes("call")) score += 5;
 
   if (memory.name) score += 1;
@@ -129,42 +70,102 @@ function scoreLead(text, memory) {
 }
 
 /* =========================
-   MEMORY EXTRACTION
+   RESPONSE ENGINE (SALES FLOW)
 ========================= */
-function extractMemory(messages) {
-  const text = messages.map(m => m.content).join(" ").toLowerCase();
-
-  const name = text.match(/my name is ([a-z]+)/)?.[1];
-  const business = text.match(/(business|company) is ([a-z ]+)/)?.[2];
-
-  return { name, business };
-}
-
-/* =========================
-   RESPONSE ENGINE
-========================= */
-function generateReply(intent, memory, score) {
+function generateReply(intent, score, memory, stage) {
   const name = memory.name ? ` ${memory.name}` : "";
 
-  if (score === "hot") {
-    return `Perfect${name}. I can help you set up a full system (CRM + automation + leads). Do you want a full setup or basic website?`;
+  if (stage === "hot_lead") {
+    return `Perfect${name}. I can set up a full system for you (CRM + automation + leads). Do you want a complete setup or just website first?`;
   }
 
-  if (score === "warm") {
-    if (intent === "pricing") {
-      return `Our systems start from ₹14,999${name}. What type of business do you run?`;
-    }
-
-    return `Got it${name}. Are you currently getting leads from your website or not yet?`;
-  }
-
-  if (intent === "services") {
-    return `We build conversion systems — websites that generate leads, CRM tracking, WhatsApp automation, and booking funnels. What business are you in?`;
+  if (stage === "ready_to_close") {
+    return `Got it${name}. What’s your current monthly goal for leads or sales?`;
   }
 
   if (intent === "pricing") {
-    return `We have packages starting from ₹14,999. Tell me your business type and I’ll recommend the right setup.`;
+    return `Our systems start from ₹14,999${name}. What type of business are you running?`;
   }
 
-  return `I can help you with pricing, services, or improving your website’s lead generation. What are you trying to achieve?`;
+  if (intent === "services") {
+    return `We build conversion systems — websites, CRM tracking, WhatsApp automation, and funnels. What business are you in?`;
+  }
+
+  return `I can help you with pricing, setup, or improving your lead generation. What are you trying to achieve?`;
+}
+
+/* =========================
+   MAIN HANDLER
+========================= */
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const body =
+      typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
+    const { messages = [], email } = body;
+
+    const lastMessage =
+      messages[messages.length - 1]?.content || "";
+
+    const memory = extractMemory(messages);
+    const intent = detectIntent(lastMessage);
+    const score = scoreLead(lastMessage, memory);
+
+    // get last stage from DB (optional)
+    const { data: existing } = await supabase
+      .from("chatbot_logs")
+      .select("stage")
+      .eq("email", email)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    const stage = detectStage(intent, score, existing?.stage);
+
+    const reply = generateReply(intent, score, memory, stage);
+
+    // SAVE TO CRM
+    await supabase.from("chatbot_logs").insert([
+      {
+        email: email || null,
+        message: lastMessage,
+        intent,
+        score,
+        stage,
+        reply,
+        created_at: new Date().toISOString()
+      }
+    ]);
+
+    // UPDATE LEAD TABLE
+    if (email) {
+      await supabase
+        .from("leads")
+        .update({
+          last_intent: intent,
+          lead_score: score,
+          stage
+        })
+        .eq("email", email);
+    }
+
+    return res.json({
+      reply,
+      intent,
+      score,
+      stage
+    });
+
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      error: "Chat failed",
+      details: err.message
+    });
+  }
 }
