@@ -19,18 +19,33 @@ export default async function handler(req, res) {
 
     const { messages = [], email } = body;
 
-    const trimmedMessages = messages.slice(-10); // keep context light
+    if (!messages.length) {
+      return res.json({
+        reply: "Please send a message first."
+      });
+    }
 
     const userMessage =
-      trimmedMessages[trimmedMessages.length - 1]?.content || "";
+      messages[messages.length - 1]?.content || "";
+
+    let reply = "";
 
     /* =========================
-       CALL GROQ (PRIMARY BRAIN)
+       TRY GROQ (PRIMARY AI)
     ========================= */
-    const reply = await callGroq(trimmedMessages);
+    try {
+      reply = await callGroq(messages);
+    } catch (err) {
+      console.error("Groq failed:", err.message);
+
+      /* =========================
+         FALLBACK RESPONSE (SAFE)
+      ========================= */
+      reply = fallbackAI(userMessage);
+    }
 
     /* =========================
-       CRM LOGGING
+       CRM LOGGING (SAFE ALWAYS)
     ========================= */
     await supabase.from("chatbot_logs").insert([
       {
@@ -41,20 +56,19 @@ export default async function handler(req, res) {
       }
     ]);
 
-    return res.json({
-      reply
-    });
+    return res.json({ reply });
 
   } catch (err) {
     return res.status(500).json({
-      error: "Chat failed",
-      details: err.message
+      reply:
+        "System error occurred. Please try again.",
+      error: err.message
     });
   }
 }
 
 /* =========================
-   GROQ CALL (REAL AI ENGINE)
+   GROQ CALL (SAFE + DEBUGGED)
 ========================= */
 async function callGroq(messages) {
   const response = await fetch(
@@ -70,33 +84,48 @@ async function callGroq(messages) {
         messages: [
           {
             role: "system",
-            content: `
-You are a highly intelligent business assistant.
-
-Rules:
-- Respond naturally like a human consultant
-- Avoid repeating the same phrases
-- Do not use scripted sales patterns
-- Understand user intent deeply
-- Adapt tone dynamically (casual, analytical, strategic)
-- Do NOT always ask questions
-- Sometimes give answers, sometimes suggest actions, sometimes analyze
-
-Your goal is to be useful, not repetitive or robotic.
-            `.trim()
+            content:
+              "You are a helpful business assistant. Respond naturally, clearly, and avoid repetition."
           },
           ...messages
         ],
-        temperature: 0.9
+        temperature: 0.8
       })
     }
   );
 
   const data = await response.json();
 
-  if (!data?.choices?.[0]?.message?.content) {
-    throw new Error("Invalid Groq response");
+  console.log("GROQ RESPONSE:", JSON.stringify(data));
+
+  const reply = data?.choices?.[0]?.message?.content;
+
+  if (!reply) {
+    throw new Error(
+      data?.error?.message || "Empty response from Groq"
+    );
   }
 
-  return data.choices[0].message.content;
+  return reply;
+}
+
+/* =========================
+   FALLBACK AI (NEVER BLANK)
+========================= */
+function fallbackAI(text) {
+  const t = text.toLowerCase();
+
+  if (t.includes("sales")) {
+    return "I understand you're looking to increase sales. That usually requires a proper lead generation system and follow-up process. I can help you structure that.";
+  }
+
+  if (t.includes("website")) {
+    return "A good website alone isn't enough. You need a system that converts visitors into leads.";
+  }
+
+  if (t.includes("automation")) {
+    return "Automation helps you handle leads, follow-ups, and customer flow without manual effort.";
+  }
+
+  return "I understand. Can you tell me a bit more about what you're trying to achieve?";
 }
