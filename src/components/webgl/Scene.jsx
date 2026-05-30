@@ -1,21 +1,20 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useContext } from "react";
-import * as THREE from "three";
 import { ScrollContext } from "../motion/ScrollProvider";
 
-function SceneCore() {
-  const progress = useContext(ScrollContext);
+function Core() {
+  const { progress, section } = useContext(ScrollContext);
   const points = useRef();
 
-  const count = 1500;
+  const count = 1600;
 
   const positions = useMemo(() => {
     const p = new Float32Array(count * 3);
 
     for (let i = 0; i < count; i++) {
-      p[i * 3] = (Math.random() - 0.5) * 14;
-      p[i * 3 + 1] = (Math.random() - 0.5) * 14;
-      p[i * 3 + 2] = (Math.random() - 0.5) * 14;
+      p[i * 3] = (Math.random() - 0.5) * 16;
+      p[i * 3 + 1] = (Math.random() - 0.5) * 16;
+      p[i * 3 + 2] = (Math.random() - 0.5) * 16;
     }
 
     return p;
@@ -24,45 +23,38 @@ function SceneCore() {
   useFrame(() => {
     if (!points.current) return;
 
-    // global rotation drift
-    points.current.rotation.y += 0.0006 + progress * 0.002;
-    points.current.rotation.x += 0.0002;
+    // slow cinematic drift
+    points.current.rotation.y += 0.0005 + section * 0.0003;
 
-    // vertical story drift
-    points.current.position.y = -progress * 1.2;
+    // vertical storytelling movement
+    points.current.position.y = -progress * 1.5;
   });
 
-  const moodColor = useMemo(() => {
-    if (progress < 0.25) return "#7c3aed"; // HERO - purple
-    if (progress < 0.5) return "#ef4444";  // PROBLEM - red tension
-    if (progress < 0.75) return "#22d3ee"; // SOLUTION - cyan
-    return "#22c55e"; // CTA - growth green
-  }, [progress]);
+  const moods = [
+    "#7c3aed", // hero
+    "#ef4444", // problem
+    "#22d3ee", // solution
+    "#a855f7", // pricing
+    "#22c55e"  // CTA
+  ];
 
-  const bgColor = useMemo(() => {
-    if (progress < 0.25) return "#050014";
-    if (progress < 0.5) return "#0a0303";
-    if (progress < 0.75) return "#020b10";
-    return "#020807";
-  }, [progress]);
+  const color = moods[section] || "#7c3aed";
+
+  const bg = [
+    "#050014",
+    "#0a0303",
+    "#020b10",
+    "#0b0610",
+    "#020807"
+  ][section] || "#050014";
 
   return (
     <>
-      {/* dynamic background */}
-      <color attach="background" args={[bgColor]} />
+      <color attach="background" args={[bg]} />
 
-      {/* lighting mood shift */}
-      <ambientLight intensity={0.4 + progress * 0.4} />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} intensity={1.2} color={color} />
 
-      <directionalLight
-        position={[5, 5, 5]}
-        intensity={1.2}
-        color={moodColor}
-      />
-
-      <pointLight position={[-5, -3, -2]} intensity={0.8} color="#a855f7" />
-
-      {/* particles */}
       <points ref={points}>
         <bufferGeometry>
           <bufferAttribute
@@ -73,12 +65,7 @@ function SceneCore() {
           />
         </bufferGeometry>
 
-        <pointsMaterial
-          size={0.018}
-          color={moodColor}
-          transparent
-          opacity={0.75}
-        />
+        <pointsMaterial size={0.018} color={color} transparent opacity={0.75} />
       </points>
     </>
   );
@@ -95,7 +82,7 @@ export default function Scene() {
         pointerEvents: "none"
       }}
     >
-      <SceneCore />
+      <Core />
     </Canvas>
   );
 }
