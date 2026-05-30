@@ -5,80 +5,101 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// simple validation
+function validateLead(lead) {
+  if (!lead) return false;
+  if (!lead.email && !lead.phone) return false;
+  return true;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const lead = JSON.parse(req.body);
+    const lead = typeof req.body === "string"
+      ? JSON.parse(req.body)
+      : req.body;
 
-    // 1. SAVE LEAD
-    const { data, error } = await supabase
+    if (!validateLead(lead)) {
+      return res.status(400).json({
+        error: "Invalid lead data",
+      });
+    }
+
+    // 1. INSERT LEAD (SINGLE SOURCE OF TRUTH)
+    const { data: created, error } = await supabase
       .from("leads")
       .insert([
         {
-          ...lead,
+          name: lead.name || "Unknown",
+          email: lead.email || null,
+          phone: lead.phone || null,
+          message: lead.message || "",
           status: "new",
           emails_sent: 0,
           whatsapp_sent: false,
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ])
       .select()
       .single();
 
     if (error) {
-      return res.status(500).json({ error });
-    }
-
-    // 2. TRACK EVENT
-    await supabase.from("events").insert([
-      {
-        event_name: "lead_created",
-        metadata: data,
-        created_at: new Date().toISOString()
-      }
-    ]);
-
-    // 3. CALL EMAIL SYSTEM
-    await fetch(`${process.env.BASE_URL}/api/sendemail`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-
-    // 4. CALL WHATSAPP SYSTEM (optional)
-    if (data.phone) {
-      await fetch(`${process.env.BASE_URL}/api/whatsapp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: data.phone,
-          message: `Hey ${data.name}, we received your request.`,
-          email: data.email
-        })
+      return res.status(500).json({
+        error: "Database insert failed",
+        details: error.message,
       });
     }
 
-    // 5. UPDATE CRM STATE
-    await supabase
-      .from("leads")
-      .update({
-        status: "contacted",
-        emails_sent: 1
-      })
-      .eq("id", data.id);
+    // 2. EVENT LOG (NON-BLOCKING)
+    supabase.from("events").insert([
+      {
+        event_name: "lead_created",
+        metadata: created,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
+    // 3. EMAIL SYSTEM (SAFE CALL)
+    try {
+      await fetch(`${process.env.BASE_URL}/api/sendemail`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(created),
+      });
+    } catch (e) {
+      console.log("Email failed:", e.message);
+    }
+
+    // 4. WHATSAPP SYSTEM (SAFE CALL)
+    if (created.phone) {
+      try {
+        await fetch(`${process.env.BASE_URL}/api/whatsapp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: created.phone,
+            message: `Hey ${created.name}, thanks for reaching out!`,
+          }),
+        });
+      } catch (e) {
+        console.log("WhatsApp failed:", e.message);
+      }
+    }
+
+    // 5. FINAL RESPONSE
     return res.status(200).json({
       success: true,
-      lead_id: data.id
+      lead_id: created.id,
+      status: "new",
     });
 
   } catch (err) {
     return res.status(500).json({
-      error: "Lead processing failed",
-      details: err.message
+      error: "Lead pipeline crashed",
+      details: err.message,
     });
   }
 }
