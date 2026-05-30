@@ -19,68 +19,42 @@ export default async function handler(req, res) {
 
     const { messages = [], email } = body;
 
-    const last = normalize(messages[messages.length - 1]?.content || "");
+    const userMessage =
+      messages[messages.length - 1]?.content || "";
+
+    const intent = detectIntent(userMessage);
+
+    let reply;
 
     /* =========================
-       LOAD MEMORY
+       LAYER 1 — GROQ (PRIMARY AI)
     ========================= */
-    const memory = await loadMemory(email);
+    try {
+      reply = await callGroq(messages, intent);
+    } catch (err) {
+      console.warn("Groq failed → fallback activated");
 
-    /* =========================
-       INTENT DETECTION
-    ========================= */
-    const intent = detectIntent(last);
+      /* =========================
+         LAYER 2 — SMART FALLBACK AI
+      ========================= */
+      reply = smartFallback(userMessage, intent);
 
-    /* =========================
-       LEAD SCORING ENGINE
-    ========================= */
-    const leadScore = calculateLeadScore(last, memory, intent);
-
-    const stage = getStage(leadScore);
-
-    /* =========================
-       SALES RESPONSE ENGINE
-    ========================= */
-    const reply = generateSalesReply({
-      intent,
-      stage,
-      leadScore,
-      memory,
-      last
-    });
-
-    /* =========================
-       UPDATE MEMORY
-    ========================= */
-    const updatedMemory = {
-      ...memory,
-      last_intent: intent,
-      lead_score: leadScore,
-      stage
-    };
-
-    /* =========================
-       SAVE MEMORY + LOGS
-    ========================= */
-    if (email) {
-      await supabase.from("chatbot_memory").upsert([
-        {
-          email,
-          memory: updatedMemory,
-          lead_score: leadScore,
-          stage,
-          updated_at: new Date().toISOString()
-        }
-      ]);
+      if (!reply) {
+        /* =========================
+           LAYER 3 — RULE ENGINE
+        ========================= */
+        reply = ruleFallback(intent);
+      }
     }
 
+    /* =========================
+       CRM LOGGING (ALWAYS WORKS)
+    ========================= */
     await supabase.from("chatbot_logs").insert([
       {
         email: email || null,
-        message: last,
+        message: userMessage,
         intent,
-        stage,
-        lead_score: leadScore,
         reply,
         created_at: new Date().toISOString()
       }
@@ -89,139 +63,117 @@ export default async function handler(req, res) {
     return res.json({
       reply,
       intent,
-      stage,
-      leadScore
+      mode: reply.includes("system") ? "fallback" : "ai"
     });
 
   } catch (err) {
     return res.status(500).json({
-      error: "Chat failed",
+      error: "Critical failure",
       details: err.message
     });
   }
 }
 
 /* =========================
-   MEMORY LOADING
+   LAYER 1 — GROQ AI
 ========================= */
-async function loadMemory(email) {
-  if (!email) return {};
+async function callGroq(messages, intent) {
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama3-70b-8192",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a high-end sales assistant. Convert users into leads. Be concise, clear, business-focused."
+          },
+          ...messages
+        ],
+        temperature: 0.7
+      })
+    }
+  );
 
-  const { data } = await supabase
-    .from("chatbot_memory")
-    .select("*")
-    .eq("email", email)
-    .single();
+  const data = await response.json();
 
-  return data?.memory || {};
+  if (!data?.choices?.[0]?.message?.content) {
+    throw new Error("Invalid Groq response");
+  }
+
+  return data.choices[0].message.content;
+}
+
+/* =========================
+   LAYER 2 — SMART FALLBACK (NO AI)
+========================= */
+function smartFallback(text, intent) {
+  const t = text.toLowerCase();
+
+  if (intent === "sales") {
+    return "Got it — you're looking to increase sales. That usually requires a proper lead system (not just traffic). Do you want leads from ads, Instagram, or organic reach?";
+  }
+
+  if (intent === "automation") {
+    return "Automation can connect your CRM, WhatsApp, and lead tracking so everything runs automatically. What part do you want to automate first?";
+  }
+
+  if (intent === "pricing") {
+    return "Pricing depends on system complexity and automation level. Are you looking for a basic setup or full system?";
+  }
+
+  if (t.includes("help")) {
+    return "I can help you structure a proper system for your business. What are you trying to achieve?";
+  }
+
+  return null;
+}
+
+/* =========================
+   LAYER 3 — RULE ENGINE (LAST RESORT)
+========================= */
+function ruleFallback(intent) {
+  if (intent === "sales") {
+    return "We can help you set up a system to generate consistent leads and clients.";
+  }
+
+  if (intent === "automation") {
+    return "Automation removes manual work by connecting your systems together.";
+  }
+
+  return "Let me understand your requirement better so I can guide you properly.";
 }
 
 /* =========================
    INTENT DETECTION
 ========================= */
 function detectIntent(text) {
-  if (text.includes("price") || text.includes("cost")) return "pricing";
-  if (text.includes("automation") || text.includes("crm")) return "automation";
-  if (text.includes("website")) return "services";
-  if (text.includes("call") || text.includes("book")) return "conversion";
+  const t = text.toLowerCase();
+
+  if (
+    t.includes("sales") ||
+    t.includes("leads") ||
+    t.includes("clients") ||
+    t.includes("customers")
+  ) return "sales";
+
+  if (
+    t.includes("automation") ||
+    t.includes("crm") ||
+    t.includes("whatsapp")
+  ) return "automation";
+
+  if (
+    t.includes("price") ||
+    t.includes("cost") ||
+    t.includes("budget")
+  ) return "pricing";
+
   return "general";
-}
-
-/* =========================
-   LEAD SCORING ENGINE (CORE SALES LOGIC)
-========================= */
-function calculateLeadScore(text, memory, intent) {
-  let score = memory.lead_score || 0;
-
-  // interest signals
-  if (intent === "pricing") score += 20;
-  if (intent === "conversion") score += 40;
-  if (text.includes("need")) score += 10;
-  if (text.includes("now")) score += 15;
-
-  // engagement history
-  if ((memory.message_count || 0) > 5) score += 10;
-
-  return Math.min(score, 100);
-}
-
-/* =========================
-   STAGE ENGINE
-========================= */
-function getStage(score) {
-  if (score >= 70) return "hot";
-  if (score >= 40) return "warm";
-  if (score >= 20) return "interested";
-  return "cold";
-}
-
-/* =========================
-   SALES RESPONSE ENGINE
-========================= */
-function generateSalesReply({ intent, stage, leadScore }) {
-  const base = RESPONSE_BANK[intent] || RESPONSE_BANK.general;
-
-  const opening = random(base);
-
-  if (stage === "hot") {
-    return (
-      "Perfect — I think your setup is ready for execution. " +
-      "I can get this fully structured for you (CRM + automation + leads). " +
-      "Should I prepare a full system plan or connect you for setup?"
-    );
-  }
-
-  if (stage === "warm") {
-    return (
-      opening +
-      " I can already see a strong use case for automation here. " +
-      "Do you want a full system or just lead capture first?"
-    );
-  }
-
-  if (stage === "interested") {
-    return (
-      opening +
-      " This can be turned into a proper lead system. " +
-      "What type of business are you running?"
-    );
-  }
-
-  return (
-    opening +
-    " Let me understand your goal first so I can guide you properly."
-  );
-}
-
-/* =========================
-   RESPONSE BANK
-========================= */
-const RESPONSE_BANK = {
-  pricing: [
-    "Pricing depends on system size and automation level.",
-    "We structure pricing based on business requirements."
-  ],
-  automation: [
-    "Automation connects CRM, WhatsApp, and lead tracking.",
-    "This removes manual follow-ups completely."
-  ],
-  services: [
-    "We build conversion-focused systems, not just websites.",
-    "We create lead generation + automation systems."
-  ],
-  general: [
-    "Let me understand your requirement first.",
-    "I can guide you based on your business goal."
-  ]
-};
-
-/* =========================
-   UTIL
-========================= */
-function random(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function normalize(t) {
-  return t.toLowerCase().replace(/[^a-z0-9\s]/g, " ").trim();
 }
