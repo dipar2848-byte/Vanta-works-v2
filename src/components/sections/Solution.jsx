@@ -1,48 +1,49 @@
 import { motion } from "framer-motion";
 import Scene from "../motion/Scene";
 
-const features = [
-  "Lead Capture Automation",
-  "WhatsApp Funnels",
-  "AI Chatbot Assistant",
-  "Booking Systems"
+const steps = [
+  "Traffic enters",
+  "Lead is captured",
+  "Stored in CRM",
+  "Automated follow-up",
+  "Booked into calls"
 ];
 
 export default function Solution() {
   return (
     <Scene>
-      <div className="w-full max-w-6xl mx-auto">
-        <h2 className="text-3xl sm:text-5xl font-bold text-center">
-          We Build Conversion Systems, Not Just Websites
-        </h2>
+      <div className="w-full max-w-5xl mx-auto text-center">
 
-        <motion.div
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={{
-            hidden: {},
-            show: {
-              transition: {
-                staggerChildren: 0.15
-              }
-            }
-          }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-16"
+        <motion.h2
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          className="text-h1"
         >
-          {features.map((item) => (
+          We Don’t Build Websites.
+        </motion.h2>
+
+        <p className="mt-4 text-body text-white/70">
+          We build conversion systems that run your business.
+        </p>
+
+        <div className="mt-14 space-y-6">
+
+          {steps.map((step, i) => (
             <motion.div
-              key={item}
-              variants={{
-                hidden: { opacity: 0, y: 50 },
-                show: { opacity: 1, y: 0 }
-              }}
-              className="glass p-6 rounded-3xl"
+              key={step}
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ delay: i * 0.15 }}
+              className="glass-card px-6 py-4 text-white/90 text-lg"
             >
-              <h3 className="text-xl font-semibold">{item}</h3>
+              {step}
             </motion.div>
           ))}
-        </motion.div>
+
+        </div>
+
       </div>
     </Scene>
   );
