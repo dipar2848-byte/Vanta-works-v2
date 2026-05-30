@@ -1,39 +1,36 @@
+import LeadForm from "../LeadForm";
 import { motion } from "framer-motion";
 
 export default function FinalCTA() {
   return (
-    <section className="mood-cta scene-cta">
-      <div className="max-w-5xl mx-auto px-6">
+    <section className="mood-cta relative">
 
-        <div className="glass-card p-8 md:p-14 text-center">
+      <div className="container-text text-center mb-10">
 
-          <div className="inline-flex px-4 py-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 text-sm mb-6">
-            Limited Client Capacity
-          </div>
+        <motion.h2
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-h1"
+        >
+          Your System Starts Here
+        </motion.h2>
 
-          <h2 className="text-display mb-6">
-            Stop Losing Customers To A Weak Website
-          </h2>
-
-          <p className="text-body max-w-2xl mx-auto mb-10">
-            Every day your website fails to convert visitors,
-            potential customers choose competitors instead.
-            Let's build a system that generates leads,
-            books calls and helps your business grow.
-          </p>
-
-          <motion.a
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.98 }}
-            href="https://wa.me/YOURNUMBER?text=Hi%20VantaWorks%2C%20I'd%20like%20to%20discuss%20a%20website%20for%20my%20business."
-            className="btn btn-primary"
-          >
-            Book Strategy Call
-          </motion.a>
-
-        </div>
+        <p className="text-body mt-4 text-white/70">
+          One setup away from turning traffic into predictable revenue.
+        </p>
 
       </div>
+
+      <div className="max-w-md mx-auto">
+        <LeadForm />
+      </div>
+
+      {/* cinematic glow */}
+      <div className="absolute inset-0 -z-10 opacity-40">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]" />
+      </div>
+
     </section>
   );
 }
