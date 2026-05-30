@@ -7,11 +7,23 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   try {
-    const { data, error } = await supabase
+    const { page = 1, limit = 50, user_id } = req.query;
+
+    let query = supabase
       .from("chatbot_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false });
+
+    // FILTER BY USER (optional)
+    if (user_id) {
+      query = query.eq("user_id", user_id);
+    }
+
+    // PAGINATION
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) {
       return res.status(500).json({
@@ -20,7 +32,14 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json(data || []);
+    return res.status(200).json({
+      data: data || [],
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: count || 0,
+      },
+    });
   } catch (err) {
     return res.status(500).json({
       error: "Server crash",
